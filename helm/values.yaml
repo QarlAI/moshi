@@ -1,0 +1,20 @@
+# values.yaml
+image:
+  repository: nvcr.io/0510897355631248/thomassandbox/moshi-tts
+  tag: "0.0.2"
+  pullPolicy: IfNotPresent
+
+
+storage:
+  size: 50Gi
+  storageClassName: mdx-local-path
+
+resources:
+  limits:
+    nvidia.com/gpu: 1
+  requests:
+    nvidia.com/gpu: 1
+
+imagePullSecrets:
+  - name: ngc-docker-reg-secret
+
