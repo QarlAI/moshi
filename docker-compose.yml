@@ -4,17 +4,35 @@ name: moshi
 
 services:
 
+  moshi-rust:
+    build:
+      context: ./rust
+    restart: unless-stopped
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+      - ./rust/tts.toml:/workspace/tts.toml  # Mount config file
+    environment:
+      - HF_REPO=kyutai/moshiko-pytorch-bf16  #
+    ports: 
+      - 8080:8080
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: [gpu]
+              device_ids: ["0"]
   moshi:
     build:
       context: ./moshi
-    expose:
-     - 8998/tcp
     restart: unless-stopped
     volumes:
       - hf-cache:/root/.cache/huggingface
     environment:
       #- HF_REPO=kyutai/moshika-pytorch-bf16
       - HF_REPO=kyutai/moshiko-pytorch-bf16
+    ports: 
+      - 8080:8080
     deploy:
       resources:
         reservations:
@@ -22,19 +40,8 @@ services:
             - driver: nvidia
               capabilities: [gpu]
               count: all
-
-  tunnel:
-    image: cloudflare/cloudflared:latest
-    pull_policy: always
-    restart: unless-stopped
-    expose:
-      - 43337/tcp
-    environment:
-      TUNNEL_URL: http://moshi:8998
-      TUNNEL_METRICS: 0.0.0.0:43337
-    command: tunnel --no-autoupdate
-    depends_on:
-      - moshi
+    profiles:
+      - python
 
 volumes:
   hf-cache:

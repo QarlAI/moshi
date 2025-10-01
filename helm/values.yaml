@@ -1,7 +1,7 @@
 # values.yaml
 image:
-  repository: nvcr.io/0510897355631248/thomassandbox/moshi-tts
-  tag: "0.0.2"
+  repository: nvcr.io/0510897355631248/dalei_qarl/moshi-tts
+  tag: "0.0.1"
   pullPolicy: IfNotPresent
 
 
