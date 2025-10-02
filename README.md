@@ -262,6 +262,28 @@ pip install maturin
 maturin dev -r -m rust/mimi-pyo3/Cargo.toml
 ```
 
+## Helm Deployment
+
+The RUST server can be deployed as a helm chart for integrating in a kubernetes cluster.
+Publishing a new version of the chart requires the following steps:
+- Update the version in `helm/Chart.yaml`
+- Update the container version in `helm/values.yaml`
+- Cleanup the folder and build the chart.
+- Package the new chart and push it to NGC using the version number specified in `Chart.yaml`
+```
+cd helm
+rm -rf *.tgz
+helm package .
+ngc registry chart push <ORG>/<TEAM>/moshi-tts:<VERSION>
+```
+
+The rust server container can be built and pushed to NGC using the following: 
+```
+docker compose build moshi-rust
+docker tag moshi-moshi-rust:latest nvcr.io/<ORG>/<TEAM>/moshi-tts:<TAG>
+ngc registry image push nvcr.io/<ORG>/<TEAM>/moshi-tts:<TAG>
+```
+
 ## FAQ
 
 Checkout the [Frequently Asked Questions](FAQ.md) section before opening an issue.

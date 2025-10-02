@@ -354,6 +354,9 @@ class TTSService:
                         new_cross_sources.append(cross_source)
                         new_cross_indexes.append(b)
                 self._print(f"[{b}] Reset, voice is {voice}.")
+                if not new_entry:
+                    # If new_entry is empty after removing -1, skip further processing
+                    continue
             if client.state is None:
                 self._print(f"[{b}] Trying to push {new_entry}, but not assigned.")
             elif new_entry == [-2]:

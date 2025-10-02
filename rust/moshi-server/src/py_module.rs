@@ -74,6 +74,7 @@ pub enum InMsg {
     Text { text: String },
     Voice { embeddings: Vec<f32>, shape: Vec<usize> },
     Eos,
+    Reset,
 }
 
 #[derive(Debug, Clone)]
@@ -81,6 +82,7 @@ pub enum Msg {
     Text(String, Vec<u32>),
     Voice { embeddings: Vec<f32>, shape: Vec<usize> },
     Eos,
+    Reset,
 }
 
 /// Unique identifier.
@@ -111,6 +113,7 @@ struct Channel {
     words: std::collections::VecDeque<String>,
     steps: usize,
     prev_word_steps: usize,
+    needs_reset: bool,
 }
 
 impl Channel {
@@ -132,6 +135,7 @@ impl Channel {
             sent_init: false,
             steps: 0,
             prev_word_steps: 0,
+            needs_reset: false,
         }
     }
 
@@ -180,6 +184,7 @@ struct Inner {
     app: PyObject,
 }
 
+#[derive(Clone)]
 enum Voice {
     File(String),
     Embeddings { embeddings: Vec<f32>, shape: Vec<usize> },
@@ -233,15 +238,39 @@ impl Inner {
                     match c.in_rx.try_recv() {
                         Ok(Msg::Text(word, tokens)) => {
                             c.words.push_back(word);
-                            let mut t = Vec::with_capacity(tokens.len() + 1);
-                            if !c.sent_init {
+                            let mut t = Vec::with_capacity(tokens.len() + 2);
+
+                            let was_reset = c.needs_reset;
+
+                            // Handle reset if needed
+                            if c.needs_reset {
+                                t.push(-1);  // Reset flag
+                                c.sent_init = false;
+                                c.words.clear();
+                                c.steps = 0;
+                                c.prev_word_steps = 0;
+                                c.needs_reset = false;
+                            }
+
+                            let needs_init = !c.sent_init;
+                            if needs_init && !was_reset {  // Don't double-send -1 if we just reset
                                 t.push(-1);
                                 c.sent_init = true;
+                            } else if needs_init {
+                                c.sent_init = true;
                             }
+
                             for &v in tokens.iter() {
                                 t.push(v as i32);
                             }
-                            in_data.push((batch_idx, t, c.voice.take()));
+
+                            // Send voice on initialization (both first time and after reset)
+                            let voice_to_send = if needs_init || was_reset {
+                                c.voice.clone()
+                            } else {
+                                None
+                            };
+                            in_data.push((batch_idx, t, voice_to_send));
                         }
                         Ok(Msg::Voice { embeddings, shape }) => {
                             c.voice = Some(Voice::Embeddings { embeddings, shape });
@@ -252,6 +281,10 @@ impl Inner {
                             } else {
                                 *channel = None
                             }
+                        }
+                        Ok(Msg::Reset) => {
+                            // Flag for reset on next text message
+                            c.needs_reset = true;
                         }
                         Err(TryRecvError::Empty) => {}
                         Err(TryRecvError::Disconnected) => *channel = None,
@@ -312,16 +345,18 @@ impl Inner {
                         if let Some(c) = channel.as_mut() {
                             let mask = mask[batch_idx];
                             // The channel has changed so skip the update.
-                            if Some(c.id) != channel_ids[batch_idx] || !c.sent_init {
+                            if Some(c.id) != channel_ids[batch_idx] {
                                 return;
                             }
                             if (mask & MASK_AR_STEP) > 0 {
                                 c.steps += 1;
                             }
-                            if (mask & MASK_MISSING_WORDS) > 0 {
-                                metrics::MISSING_WORDS_STEPS.inc();
-                            } else {
-                                metrics::COULD_HAVE_RUN_STEPS.inc();
+                            if c.sent_init {
+                                if (mask & MASK_MISSING_WORDS) > 0 {
+                                    metrics::MISSING_WORDS_STEPS.inc();
+                                } else {
+                                    metrics::COULD_HAVE_RUN_STEPS.inc();
+                                }
                             }
                             if (mask & MASK_WORD_FINISHED) > 0 {
                                 // MASK_WORD_FINISHED currently indicates the beggining of a new
@@ -593,6 +628,7 @@ impl M {
                             let msg: InMsg = rmp_serde::from_slice(&msg)?;
                             match msg {
                                 InMsg::Eos => in_tx.send(Msg::Eos)?,
+                                InMsg::Reset => in_tx.send(Msg::Reset)?,
                                 InMsg::Text { text } => send_text(&text)?,
                                 InMsg::Voice { embeddings, shape } => {
                                     in_tx.send(Msg::Voice { embeddings, shape })?
