@@ -269,6 +269,10 @@ class TTSService:
             frame = self.lm_gen.step(self.input_tokens)
             assert frame is not None
             mimi.decode(frame[:, 1:].clamp(min=0))
+        # Reset streaming state after warmup to clear default voice conditioning
+        reset_mask = torch.ones(self.batch_size, dtype=torch.bool, device=self.device)
+        self.lm_gen.reset_streaming(reset_mask=reset_mask)
+        mimi.reset_streaming(reset_mask=reset_mask)
         print("ready to roll.")
 
     def _get_cross_attention_source(self, all_attributes: list[ConditionAttributes]) -> torch.Tensor:
@@ -427,6 +431,7 @@ class TTSService:
                               for voice_source in new_voice_sources]
             new_cross_sources += self._get_cross_attention_source(all_attributes).split(1)
             new_cross_indexes += new_voice_indexes
+        # Update cross-attention BEFORE reset to ensure new voice is active when reset happens
         if new_cross_sources:
             cross_source = torch.cat(new_cross_sources)
             cross_indexes = torch.tensor(new_cross_indexes, dtype=torch.long, device=self.device)
@@ -436,6 +441,7 @@ class TTSService:
                 assert state is not None
                 assert state.k_cross is not None
                 assert state.v_cross is not None
+                # Use index_copy_ to update the cross-attention cache for the reset clients
                 state.k_cross.index_copy_(0, cross_indexes, k)
                 state.v_cross.index_copy_(0, cross_indexes, v)
 

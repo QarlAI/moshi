@@ -531,7 +531,14 @@ class _LMGenState(State):
     def reset(self, reset_mask: torch.Tensor) -> None:
         super().reset(reset_mask)
         self.offsets[:] = torch.where(reset_mask, torch.zeros_like(self.offsets), self.offsets)
-        self.offset_cpu = 0
+        # Reset cache for the masked batch items to avoid state leakage
+        reset_expanded = reset_mask[:, None, None].expand_as(self.cache)
+        self.cache[:] = torch.where(reset_expanded,
+                                     torch.full_like(self.cache, self.cache.new_tensor(-2)),  # ungenerated_token_id
+                                     self.cache)
+        # Only reset offset_cpu if all items are being reset
+        if reset_mask.all():
+            self.offset_cpu = 0
         if self.reset_callback is not None:
             self.reset_callback(reset_mask)
 

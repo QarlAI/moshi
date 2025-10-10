@@ -21,7 +21,7 @@ services:
           devices:
             - driver: nvidia
               capabilities: [gpu]
-              device_ids: ["0"]
+              device_ids: ["2"]
   moshi:
     build:
       context: ./moshi
@@ -42,6 +42,21 @@ services:
               count: all
     profiles:
       - python
+
+  dev-container:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile
+    container_name: dev-container
+    network_mode: host
+    stdin_open: true
+    tty: true
+    volumes:
+      - .:/workspace
+    depends_on:
+      - moshi-rust
+    command: ["bash", "-lc", "trap : TERM INT; tail -f /dev/null & wait"]
+
 
 volumes:
   hf-cache:
