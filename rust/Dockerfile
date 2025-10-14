@@ -59,5 +59,7 @@ RUN LD_LIBRARY_PATH=$(python -c 'import sysconfig; print(sysconfig.get_config_va
 
 COPY tts.toml .
 
+# Default config path (can be overridden via TTS_CONFIG_PATH env var)
+ENV TTS_CONFIG_PATH=./tts.toml
 
-CMD ["uv", "run", "moshi-server", "worker", "--config", "./tts.toml"]
+CMD ["sh", "-c", "uv run moshi-server worker --config ${TTS_CONFIG_PATH}"]

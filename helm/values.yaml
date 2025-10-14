@@ -1,7 +1,7 @@
 # values.yaml
 image:
   repository: nvcr.io/0510897355631248/dalei_qarl/moshi-tts
-  tag: "0.0.1"
+  tag: "0.0.2"
   pullPolicy: IfNotPresent
 
 
@@ -17,4 +17,52 @@ resources:
 
 imagePullSecrets:
   - name: ngc-docker-reg-secret
+
+# TTS Configuration
+# This will be mounted as tts.toml in the container
+ttsConfig:
+  # Server-level settings
+  static_dir: "./static/"
+  log_dir: "$HOME/tmp/tts-logs"
+  instance_name: "tts"
+  authorized_ids:
+    - "public_token"
+
+  # Module configuration
+  modules:
+    tts_py:
+      # Module-level settings
+      type: "Py"
+      path: "/api/tts_streaming"
+      text_tokenizer_file: "hf://kyutai/tts-1.6b-en_fr/tokenizer_spm_8k_en_fr_audio.model"
+      batch_size: 8  # Adjust to your GPU memory capacity
+      text_bos_token: 1
+
+      # Python TTS-specific settings (passed to tts.py)
+      py:
+        log_folder: "$HOME/tmp/moshi-server-logs"
+        voice_folder: "hf-snapshot://kyutai/tts-voices/**/*.safetensors"
+        default_voice: "unmute-prod-website/default_voice.wav"
+        cfg_coef: 2.0
+        cfg_is_no_text: true
+        padding_between: 1
+        n_q: 24
+        temp: 0.1
+        debug: true
+
+        # Optional fields (uncomment to use)
+        # hf_repo: "kyutai/moshiko-pytorch-bf16"
+        # mimi_weight: null
+        # moshi_weight: null
+        # config_path: null
+        # tokenizer: null
+        # device: "cuda"
+        # max_padding: 8
+        # initial_padding: 2
+        # final_padding: 4
+        # padding_bonus: 0.0
+        # interleaved_text_only: 2
+
+# Path where the config will be mounted in the container
+ttsConfigPath: "/config/tts.toml"
 

@@ -3,4 +3,4 @@ apiVersion: v2
 name: moshi-tts
 description: Moshi TTS Pipeline
 type: application
-version: 0.0.1
+version: 0.0.2

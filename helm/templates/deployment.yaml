@@ -24,12 +24,22 @@ spec:
         - containerPort: 8080
           name: api
         env:
+          - name: TTS_CONFIG_PATH
+            value: {{ .Values.ttsConfigPath | quote }}
           {{- range $name, $value := .Values.envVars }}
           - name: {{ $name }}
             value: {{ $value | quote }}
           {{- end }}
+        volumeMounts:
+        - name: tts-config
+          mountPath: /config
+          readOnly: true
         resources:
           {{- toYaml .Values.resources | nindent 10 }}
+      volumes:
+      - name: tts-config
+        configMap:
+          name: moshi-tts-config
 ---
 apiVersion: v1
 kind: Service

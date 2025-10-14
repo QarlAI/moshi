@@ -1,0 +1,29 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: moshi-tts-config
+data:
+  tts.toml: |
+    static_dir = {{ .Values.ttsConfig.static_dir | quote }}
+    log_dir = {{ .Values.ttsConfig.log_dir | quote }}
+    instance_name = {{ .Values.ttsConfig.instance_name | quote }}
+    authorized_ids = [{{- range $i, $id := .Values.ttsConfig.authorized_ids }}{{if $i}}, {{end}}{{ $id | quote }}{{- end }}]
+
+    [modules.tts_py]
+    type = {{ .Values.ttsConfig.modules.tts_py.type | quote }}
+    path = {{ .Values.ttsConfig.modules.tts_py.path | quote }}
+    text_tokenizer_file = {{ .Values.ttsConfig.modules.tts_py.text_tokenizer_file | quote }}
+    batch_size = {{ .Values.ttsConfig.modules.tts_py.batch_size }}
+    text_bos_token = {{ .Values.ttsConfig.modules.tts_py.text_bos_token }}
+
+    [modules.tts_py.py]
+    log_folder = {{ .Values.ttsConfig.modules.tts_py.py.log_folder | quote }}
+    voice_folder = {{ .Values.ttsConfig.modules.tts_py.py.voice_folder | quote }}
+    default_voice = {{ .Values.ttsConfig.modules.tts_py.py.default_voice | quote }}
+    cfg_coef = {{ .Values.ttsConfig.modules.tts_py.py.cfg_coef }}
+    cfg_is_no_text = {{ .Values.ttsConfig.modules.tts_py.py.cfg_is_no_text }}
+    padding_between = {{ .Values.ttsConfig.modules.tts_py.py.padding_between }}
+    n_q = {{ .Values.ttsConfig.modules.tts_py.py.n_q }}
+    temp = {{ .Values.ttsConfig.modules.tts_py.py.temp }}
+    debug = {{ .Values.ttsConfig.modules.tts_py.py.debug }}
