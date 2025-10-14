@@ -284,6 +284,28 @@ docker tag moshi-moshi-rust:latest nvcr.io/<ORG>/<TEAM>/moshi-tts:<TAG>
 ngc registry image push nvcr.io/<ORG>/<TEAM>/moshi-tts:<TAG>
 ```
 
+
+## Evaluate voices
+
+Evaluating a list of voices can be done using the `test_voices.py` script. This script uses a json file containing the voices to test and a text as input and writes the resulting wav files. Running it requires building and running the docker containers for moshi-rust and dev-container. The following command will start the moshi rust server as well as the development container;
+```
+docker compose up --build moshi-rust dev-container 
+```
+
+The development container can then be accessed using: 
+```
+docker compose exec dev-container bash
+```
+
+Running a script from the `scripts` folder can be done using:
+````
+cd scripts
+uv run test_voices.py
+```
+
+This will generate by default 10 samples using each voice present in the `voices.json` file.
+
+
 ## FAQ
 
 Checkout the [Frequently Asked Questions](FAQ.md) section before opening an issue.
