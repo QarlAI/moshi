@@ -18,3 +18,5 @@ cfg_coef = 2.0
 cfg_is_no_text = true
 padding_between = 1
 n_q = 24
+temp = 0.1
+debug = false

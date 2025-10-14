@@ -443,6 +443,16 @@ class TTSService:
             self.lm_gen.reset_streaming(reset_mask=reset_mask)
             mimi.reset_streaming(reset_mask=reset_mask)
 
+            if new_cross_sources:
+                warmup_steps = 3
+                self._print(f"Warming up with new voice for {warmup_steps} steps...")
+                for _ in range(warmup_steps):
+                    self.lm_gen.set_exec_mask(reset_mask)
+                    mimi.set_exec_mask(reset_mask)
+                    frame = self.lm_gen.step(self.input_tokens)
+                    if frame is not None:
+                        mimi.decode(frame[:, 1:].clamp(min=0))
+
         if skip_exec:
             time.sleep(0.001)  # Sleep a bit to avoid busy waiting.
             return
