@@ -1,7 +1,7 @@
 # values.yaml
 image:
-  repository: nvcr.io/0510897355631248/dalei_qarl/moshi-tts
-  tag: "0.0.2"
+  repository: us-docker.pkg.dev/qarlproductionregistries/dockerimg/moshi-tts
+  tag: "v0.0.2"
   pullPolicy: IfNotPresent
 
 
@@ -16,7 +16,7 @@ resources:
     nvidia.com/gpu: 1
 
 imagePullSecrets:
-  - name: ngc-docker-reg-secret
+  - name: gar-docker-reg-secret
 
 # TTS Configuration
 # This will be mounted as tts.toml in the container
